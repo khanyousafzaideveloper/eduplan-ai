@@ -13,5 +13,16 @@ export const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABL
     storage: localStorage,
     persistSession: true,
     autoRefreshToken: true,
+  },
+  global: {
+    fetch: async (url, options) => {
+      const response = await fetch(url, options);
+      // Log all Supabase requests and responses for debugging
+      console.log(`[Supabase ${options?.method || 'GET'}] ${url}`, {
+        status: response.status,
+        ok: response.ok
+      });
+      return response;
+    }
   }
 });

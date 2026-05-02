@@ -7,23 +7,168 @@ export type Json =
   | Json[]
 
 export type Database = {
-  // Allows to automatically instantiate createClient with right options
-  // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
     PostgrestVersion: "14.5"
   }
   public: {
     Tables: {
-      [_ in never]: never
+      profiles: {
+        Row: {
+          id: string
+          role: "teacher" | "student" | "admin"
+          full_name: string
+          email: string
+          institute: string | null
+          created_at: string
+        }
+        Insert: {
+          id: string
+          role?: "teacher" | "student" | "admin"
+          full_name: string
+          email: string
+          institute?: string | null
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          role?: "teacher" | "student" | "admin"
+          full_name?: string
+          email?: string
+          institute?: string | null
+          created_at?: string
+        }
+      }
+      classes: {
+        Row: {
+          id: string
+          teacher_id: string
+          name: string
+          subject: string
+          grade: string
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          teacher_id: string
+          name: string
+          subject: string
+          grade: string
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          teacher_id?: string
+          name?: string
+          subject?: string
+          grade?: string
+          created_at?: string
+        }
+      }
+      class_members: {
+        Row: {
+          id: string
+          class_id: string
+          student_id: string
+          student_name: string | null
+          student_email: string | null
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          class_id: string
+          student_id: string
+          student_name?: string | null
+          student_email?: string | null
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          class_id?: string
+          student_id?: string
+          student_name?: string | null
+          student_email?: string | null
+          created_at?: string
+        }
+      }
+      quizzes: {
+        Row: {
+          id: string
+          class_id: string
+          title: string
+          subject: string
+          grade: string
+          board: string
+          questions: Json
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          class_id: string
+          title: string
+          subject: string
+          grade: string
+          board: string
+          questions: Json
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          class_id?: string
+          title?: string
+          subject?: string
+          grade?: string
+          board?: string
+          questions?: Json
+          created_at?: string
+        }
+      }
+      past_paper_chunks: {
+        Row: {
+          id: string
+          content: string
+          embedding: string | null
+          metadata: Json
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          content: string
+          embedding?: string | null
+          metadata: Json
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          content?: string
+          embedding?: string | null
+          metadata?: Json
+          created_at?: string
+        }
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      match_chunks: {
+        Args: {
+          query_embedding: string
+          match_threshold: number
+          match_count: number
+        }
+        Returns: {
+          id: string
+          content: string
+          metadata: Json
+          similarity: number
+        }[]
+      }
     }
     Enums: {
-      [_ in never]: never
+      app_role: "teacher" | "student" | "admin"
+      subject_type: "Mathematics" | "Science" | "English / Language Arts" | "History / Social Studies" | "Geography" | "Art" | "Music" | "Physical Education" | "Computer Science" | "Foreign Language"
+      grade_level: "Pre-K" | "Kindergarten" | "Grade 1" | "Grade 2" | "Grade 3" | "Grade 4" | "Grade 5" | "Grade 6" | "Grade 7" | "Grade 8" | "Grade 9" | "Grade 10" | "Grade 11" | "Grade 12"
+      exam_board: "FBISE" | "BISE Lahore" | "BISE Rawalpindi" | "BISE Multan" | "BISE Faisalabad" | "BISE Gujranwala" | "BISE Sargodha" | "AKU-EB" | "Punjab Curriculum"
     }
     CompositeTypes: {
       [_ in never]: never

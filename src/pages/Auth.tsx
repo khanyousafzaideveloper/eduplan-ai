@@ -5,10 +5,12 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { toast } from "sonner";
 import { Loader2, Sparkles } from "lucide-react";
+import { INSTITUTES } from "@/utils/institutes";
 
 export default function Auth() {
   const [loading, setLoading] = useState(false);
@@ -16,14 +18,22 @@ export default function Auth() {
   const [password, setPassword] = useState("");
   const [fullName, setFullName] = useState("");
   const [institute, setInstitute] = useState("");
+  const [grade, setGrade] = useState("");
   const [role, setRole] = useState<"teacher" | "student">("student");
   const navigate = useNavigate();
+  
+  const GRADES = [
+    "Pre-K", "Kindergarten", 
+    "Grade 1", "Grade 2", "Grade 3", "Grade 4", "Grade 5", 
+    "Grade 6", "Grade 7", "Grade 8", "Grade 9", "Grade 10", 
+    "Grade 11", "Grade 12"
+  ];
 
   const handleAuth = async (type: "login" | "signup") => {
     setLoading(true);
     try {
       if (type === "signup") {
-        const { error } = await supabase.auth.signUp({
+        const { data, error } = await supabase.auth.signUp({
           email,
           password,
           options: {
@@ -35,7 +45,26 @@ export default function Auth() {
           },
         });
         if (error) throw error;
-        toast.success("Signup successful! Please check your email for verification.");
+
+        if (data.user) {
+          // MANUAL INSERTION: Create the profile directly from code
+          const { error: profileError } = await supabase.from("profiles").insert({
+            id: data.user.id,
+            full_name: fullName,
+            email: email,
+            role: role as any,
+            institute: institute,
+            grade: role === "student" ? grade : undefined,
+          });
+
+          if (profileError) {
+            console.error("Manual profile creation failed:", profileError);
+            toast.error("Account created, but profile setup failed. You can update it in Settings.");
+          } else {
+            toast.success("Account created successfully!");
+          }
+        }
+        navigate("/");
       } else {
         const { error } = await supabase.auth.signInWithPassword({ email, password });
         if (error) throw error;
@@ -44,6 +73,25 @@ export default function Auth() {
       }
     } catch (error: any) {
       toast.error(error.message || "Authentication failed");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleResetPassword = async () => {
+    if (!email) {
+      toast.error("Please enter your email first");
+      return;
+    }
+    setLoading(true);
+    try {
+      const { error } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: `${window.location.origin}/settings`,
+      });
+      if (error) throw error;
+      toast.success("Password reset link sent to your email!");
+    } catch (error: any) {
+      toast.error(error.message || "Failed to send reset link");
     } finally {
       setLoading(false);
     }
@@ -76,7 +124,16 @@ export default function Auth() {
                   <Input id="email" type="email" placeholder="name@school.edu" value={email} onChange={(e) => setEmail(e.target.value)} />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="password">Password</Label>
+                  <div className="flex items-center justify-between">
+                    <Label htmlFor="password">Password</Label>
+                    <button 
+                      type="button" 
+                      onClick={handleResetPassword}
+                      className="text-xs text-primary hover:underline"
+                    >
+                      Forgot password?
+                    </button>
+                  </div>
                   <Input id="password" type="password" value={password} onChange={(e) => setPassword(e.target.value)} />
                 </div>
                 <Button className="w-full gradient-hero" onClick={() => handleAuth("login")} disabled={loading}>
@@ -106,12 +163,43 @@ export default function Auth() {
                     <Input id="fullName" placeholder="Jane Doe" value={fullName} onChange={(e) => setFullName(e.target.value)} />
                   </div>
 
-                  {role === "teacher" && (
+                  <div className="space-y-2">
+                    <Label htmlFor="institute">Institute (School/College)</Label>
+                    <Select value={institute} onValueChange={setInstitute}>
+                      <SelectTrigger id="institute">
+                        <SelectValue placeholder="Select your school or college" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {INSTITUTES.map((inst) => (
+                          <SelectItem key={inst.id} value={inst.name}>
+                            {inst.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  {role === "student" && (
                     <div className="space-y-2">
-                      <Label htmlFor="institute">Institute / School Name</Label>
-                      <Input id="institute" placeholder="Global Academy" value={institute} onChange={(e) => setInstitute(e.target.value)} />
+                      <Label htmlFor="grade">Current Grade</Label>
+                      <Select value={grade} onValueChange={setGrade}>
+                        <SelectTrigger id="grade">
+                          <SelectValue placeholder="Select your current grade" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {GRADES.map((g) => (
+                            <SelectItem key={g} value={g}>
+                              {g}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
                     </div>
                   )}
+
+                  <div className="pt-2 text-[10px] text-muted-foreground italic">
+                    Note: Institute verification will be implemented in the next phase.
+                  </div>
 
                   <div className="space-y-2">
                     <Label htmlFor="signup-email">Email</Label>

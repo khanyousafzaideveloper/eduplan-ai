@@ -1,3 +1,4 @@
+import React from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Route, Routes, Navigate } from "react-router-dom";
 import { Toaster as Sonner } from "@/components/ui/sonner";
@@ -9,7 +10,12 @@ import TeacherDashboard from "./pages/TeacherDashboard.tsx";
 import StudentDashboard from "./pages/StudentDashboard.tsx";
 import AdminDashboard from "./pages/AdminDashboard.tsx";
 import ClassDetails from "./pages/ClassDetails.tsx";
+import StudentInvites from "./pages/StudentInvites.tsx";
+import StudentClassDetails from "./pages/StudentClassDetails.tsx";
+import TakeQuiz from "./pages/TakeQuiz.tsx";
+import Settings from "./pages/Settings.tsx";
 import NotFound from "./pages/NotFound.tsx";
+import Navbar from "./components/Navbar.tsx";
 import { useProfile } from "@/hooks/use-profile";
 import { Loader2 } from "lucide-react";
 
@@ -43,11 +49,26 @@ const DashboardRedirect = () => {
   if (loading) return null;
   if (!profile) return <Navigate to="/auth" replace />;
 
+  const adminEmail = import.meta.env.VITE_ADMIN_EMAIL;
+  console.log("[Auth Debug] Redirecting role:", profile.role, "Email:", profile.email);
+
   switch (profile.role) {
-    case "admin": return <Navigate to="/admin" replace />;
-    case "teacher": return <Navigate to="/teacher" replace />;
-    case "student": return <Navigate to="/student" replace />;
-    default: return <Navigate to="/auth" replace />;
+    case "admin": 
+      console.log("[Auth Debug] Target: /admin");
+      return <Navigate to="/admin" replace />;
+    case "teacher": 
+      console.log("[Auth Debug] Target: /teacher");
+      return <Navigate to="/teacher" replace />;
+    case "student": 
+      if (profile.email === adminEmail) {
+        console.log("[Auth Debug] Target: /admin (forced by email)");
+        return <Navigate to="/admin" replace />;
+      }
+      console.log("[Auth Debug] Target: /student");
+      return <Navigate to="/student" replace />;
+    default: 
+      console.log("[Auth Debug] Target: /auth (unknown role)");
+      return <Navigate to="/auth" replace />;
   }
 };
 
@@ -57,6 +78,7 @@ const App = () => (
       <Toaster />
       <Sonner />
       <BrowserRouter>
+        <Navbar />
         <Routes>
           <Route path="/auth" element={<Auth />} />
           <Route path="/" element={<DashboardRedirect />} />
@@ -80,8 +102,32 @@ const App = () => (
           <Route 
             path="/student" 
             element={
-              <ProtectedRoute allowedRoles={["student"]}>
+              <ProtectedRoute allowedRoles={["student", "admin"]}>
                 <StudentDashboard />
+              </ProtectedRoute>
+            } 
+          />
+          <Route 
+            path="/student/invitations" 
+            element={
+              <ProtectedRoute allowedRoles={["student", "admin"]}>
+                <StudentInvites />
+              </ProtectedRoute>
+            } 
+          />
+          <Route 
+            path="/student/class/:classId" 
+            element={
+              <ProtectedRoute allowedRoles={["student", "admin"]}>
+                <StudentClassDetails />
+              </ProtectedRoute>
+            } 
+          />
+          <Route 
+            path="/student/quiz/:quizId" 
+            element={
+              <ProtectedRoute allowedRoles={["student", "admin"]}>
+                <TakeQuiz />
               </ProtectedRoute>
             } 
           />
@@ -90,6 +136,14 @@ const App = () => (
             element={
               <ProtectedRoute allowedRoles={["admin"]}>
                 <AdminDashboard />
+              </ProtectedRoute>
+            } 
+          />
+          <Route 
+            path="/settings" 
+            element={
+              <ProtectedRoute>
+                <Settings />
               </ProtectedRoute>
             } 
           />

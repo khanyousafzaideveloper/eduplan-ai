@@ -23,12 +23,13 @@ export function useProfile() {
           .from("profiles")
           .select("*")
           .eq("id", session.user.id)
-          .single();
+          .maybeSingle();
 
         if (error) {
-          console.error("Error fetching profile:", error);
+          console.error("[Auth Debug] Error fetching profile:", error);
           setProfile(null);
         } else {
+          console.log("[Auth Debug] Profile loaded:", data);
           setProfile(data);
         }
       } catch (err) {
@@ -54,5 +55,14 @@ export function useProfile() {
     };
   }, []);
 
-  return { profile, loading, isAdmin: profile?.role === 'admin', isTeacher: profile?.role === 'teacher', isStudent: profile?.role === 'student' };
+  const adminEmail = import.meta.env.VITE_ADMIN_EMAIL;
+  const isAdmin = profile?.role === 'admin' || (profile?.email === adminEmail && !!profile?.email);
+
+  return { 
+    profile, 
+    loading, 
+    isAdmin, 
+    isTeacher: profile?.role === 'teacher' && !isAdmin, 
+    isStudent: profile?.role === 'student' && !isAdmin 
+  };
 }
