@@ -10,6 +10,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Card } from "@/components/ui/card";
+import { Link, useNavigate } from "react-router-dom";
+import { supabase } from "@/integrations/supabase/client";
 
 import { PlannerSidebar, type PlannerInputs, type SavedPlan } from "@/components/PlannerSidebar";
 import { LessonOutput } from "@/components/LessonOutput";
@@ -19,6 +21,7 @@ const STORAGE_KEY = "eduplan.history.v1";
 
 export default function Index() {
   const { theme, setTheme } = useTheme();
+  const navigate = useNavigate();
   const [inputs, setInputs] = useState<PlannerInputs>({ subject: "", grade: "", topic: "", duration: "" });
   const [content, setContent] = useState("");
   const [loading, setLoading] = useState(false);
@@ -141,6 +144,11 @@ export default function Index() {
     }
   };
 
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
+    navigate("/auth");
+  };
+
   return (
     <div className="min-h-screen flex flex-col md:flex-row bg-background">
       <PlannerSidebar
@@ -163,6 +171,9 @@ export default function Index() {
             </h2>
           </div>
           <div className="flex items-center gap-2">
+            <Button variant="outline" size="sm" asChild>
+              <Link to="/">Dashboard</Link>
+            </Button>
             <Button variant="outline" size="sm" onClick={exportPDF} disabled={!content || loading}>
               <Download className="h-4 w-4 mr-2" /> Export PDF
             </Button>
@@ -173,6 +184,9 @@ export default function Index() {
               aria-label="Toggle theme"
             >
               {theme === "dark" ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
+            </Button>
+            <Button variant="ghost" size="sm" onClick={handleLogout}>
+              Logout
             </Button>
           </div>
         </header>
