@@ -95,81 +95,68 @@ export default function StudentClassDetails() {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        <div className="lg:col-span-2 space-y-6">
-          <div className="flex items-center justify-between">
-            <h2 className="text-2xl font-bold flex items-center gap-2">
-              <ClipboardList className="h-6 w-6 text-primary" /> Available Quizzes
-            </h2>
-          </div>
+      <div className="space-y-6">
+        <div className="flex items-center justify-between">
+          <h2 className="text-2xl font-bold flex items-center gap-2">
+            <ClipboardList className="h-6 w-6 text-primary" /> Available Quizzes
+          </h2>
+        </div>
 
-          {quizzes.length === 0 ? (
-            <Card className="border-dashed py-12 text-center">
-              <p className="text-muted-foreground">No quizzes have been assigned to this class yet.</p>
-            </Card>
-          ) : (
-            <div className="grid grid-cols-1 gap-4">
-              {quizzes.map((quiz) => {
-                const submission = submissions.find(s => s.quiz_id === quiz.id);
-                const qData = quiz.questions;
-                let totalQuestions = 0;
-                if (Array.isArray(qData)) {
-                  totalQuestions = qData.length;
-                } else if (qData.sections && Array.isArray(qData.sections)) {
-                  totalQuestions = qData.sections.reduce((acc: number, s: any) => acc + (s.questions?.length || 0), 0);
-                } else if (qData.questions && Array.isArray(qData.questions)) {
-                  totalQuestions = qData.questions.length;
-                }
+        {quizzes.length === 0 ? (
+          <Card className="border-dashed py-12 text-center">
+            <p className="text-muted-foreground">No quizzes have been assigned to this class yet.</p>
+          </Card>
+        ) : (
+          <div className="grid grid-cols-1 gap-4">
+            {quizzes.map((quiz) => {
+              const submission = submissions.find(s => s.quiz_id === quiz.id);
+              const qData = quiz.questions;
+              let totalQuestions = 0;
+              if (Array.isArray(qData)) {
+                totalQuestions = qData.length;
+              } else if (qData.sections && Array.isArray(qData.sections)) {
+                totalQuestions = qData.sections.reduce((acc: number, s: any) => acc + (s.questions?.length || 0), 0);
+              } else if (qData.questions && Array.isArray(qData.questions)) {
+                totalQuestions = qData.questions.length;
+              }
 
-                return (
-                  <Card key={quiz.id} className="group hover:border-primary/30 transition-all overflow-hidden border-border/50">
-                    <div className="flex flex-col md:flex-row items-center p-6 gap-6">
-                      <div className="h-12 w-12 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
-                        <ClipboardList className="h-6 w-6 text-primary" />
-                      </div>
-                      <div className="flex-1 space-y-1">
-                        <h3 className="font-bold text-lg">{quiz.title}</h3>
-                        <div className="flex gap-4 text-sm text-muted-foreground">
-                          <span>{totalQuestions} Questions</span>
-                          <span>•</span>
-                          <span>{quiz.board}</span>
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-3 w-full md:w-auto">
-                        {submission ? (
-                          <div className="flex items-center gap-4 bg-green-500/10 text-green-600 px-4 py-2 rounded-lg border border-green-500/20">
-                            <CheckCircle2 className="h-5 w-5" />
-                            <div className="text-right">
-                              <p className="text-xs font-semibold uppercase tracking-wider">Score</p>
-                              <p className="font-bold text-lg">{submission.score}/{submission.total_questions}</p>
-                            </div>
-                          </div>
-                        ) : (
-                            <Button asChild variant="outline" size="sm" className="w-full">
-                              <Link to={`/quiz/print/${quiz.id}`}>
-                                <FileDown className="mr-2 h-4 w-4" /> PDF / Print
-                              </Link>
-                            </Button>
-                        )}
+              return (
+                <Card key={quiz.id} className="group hover:border-primary/30 transition-all overflow-hidden border-border/50">
+                  <div className="flex flex-col md:flex-row items-center p-6 gap-6">
+                    <div className="h-12 w-12 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
+                      <ClipboardList className="h-6 w-6 text-primary" />
+                    </div>
+                    <div className="flex-1 space-y-1">
+                      <h3 className="font-bold text-lg">{quiz.title}</h3>
+                      <div className="flex gap-4 text-sm text-muted-foreground">
+                        <span>{totalQuestions} Questions</span>
+                        <span>•</span>
+                        <span>{quiz.board}</span>
                       </div>
                     </div>
-                  </Card>
-                );
-              })}
-            </div>
-          )}
-        </div>
-
-        <div className="space-y-6">
-          <h2 className="text-2xl font-bold flex items-center gap-2">
-            <GraduationCap className="h-6 w-6 text-secondary" /> Learning Material
-          </h2>
-          <Card className="border-dashed p-8 text-center bg-muted/20">
-            <BookOpen className="h-12 w-12 text-muted-foreground opacity-20 mx-auto mb-4" />
-            <h3 className="font-semibold text-lg">Coming Soon</h3>
-            <p className="text-sm text-muted-foreground">AI-generated lecture notes and reading materials will be available here.</p>
-          </Card>
-        </div>
+                    <div className="flex items-center gap-3 w-full md:w-auto">
+                      {submission ? (
+                        <div className="flex items-center gap-4 bg-green-500/10 text-green-600 px-4 py-2 rounded-lg border border-green-500/20">
+                          <CheckCircle2 className="h-5 w-5" />
+                          <div className="text-right">
+                            <p className="text-xs font-semibold uppercase tracking-wider">Score</p>
+                            <p className="font-bold text-lg">{submission.score}/{submission.total_questions}</p>
+                          </div>
+                        </div>
+                      ) : (
+                          <Button asChild variant="outline" size="sm" className="w-full">
+                            <Link to={`/quiz/print/${quiz.id}`}>
+                              <FileDown className="mr-2 h-4 w-4" /> PDF / Print
+                            </Link>
+                          </Button>
+                      )}
+                    </div>
+                  </div>
+                </Card>
+              );
+            })}
+          </div>
+        )}
       </div>
     </div>
   );
