@@ -4,102 +4,72 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.7";
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Methods": "POST, OPTIONS",
+  "Access-Control-Max-Age": "86400",
 };
 
 serve(async (req) => {
-  if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
+  if (req.method === "OPTIONS") return new Response("ok", { status: 200, headers: corsHeaders });
 
   try {
+    // Note: createClient is retained if you want to save logs or do other DB operations in the future.
     const supabase = createClient(
       Deno.env.get("SUPABASE_URL") ?? "",
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""
     );
 
-    const { subject, grade, board, count = 5 } = await req.json();
+    const { subject, grade, board, type = "MCQs", count = 5 } = await req.json();
 
-    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
-    if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY is not configured");
+    const GROQ_API_KEY = Deno.env.get("GROQ_API_KEY");
 
-    // 1. Generate search query embedding
-    const searchQuery = `${subject} ${grade} ${board} questions`;
-    const embeddingResp = await fetch("https://ai.gateway.lovable.dev/v1/embeddings", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${LOVABLE_API_KEY}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        model: "google/text-embedding-004",
-        input: searchQuery,
-      }),
-    });
+    if (!GROQ_API_KEY) {
+      throw new Error("No API Key configured. Please get a free key from console.groq.com and set GROQ_API_KEY on Supabase.");
+    }
 
-    if (!embeddingResp.ok) throw new Error("Search embedding failed");
-    const { data: embeddingData } = await embeddingResp.json();
-    const queryEmbedding = embeddingData[0].embedding;
-
-    // 2. Vector search for context
-    // We'll use a RPC or raw SQL if allowed, but since I can't add an RPC via migration easily (well I can), 
-    // I'll assume we added an RPC 'match_chunks' in the migration.
-    // Wait, I didn't add it to migrations.sql yet. I'll add it now.
+    // 1. Build Prompt
+    let systemPrompt = `You are a Senior Examiner for ${board}. Generate a ${type} for ${subject} (${grade}). Generate exactly ${count} questions in total. Return ONLY valid JSON, without any markdown formatting blocks.`;
     
-    const { data: chunks, error: searchError } = await supabase.rpc("match_chunks", {
-      query_embedding: queryEmbedding,
-      match_threshold: 0.5,
-      match_count: 5,
-    });
+    if (type === "Full Paper") {
+      systemPrompt += ` Pattern: Section A (MCQs), Section B (Short Questions), Section C (Long Questions). Format strictly as: { "isFullPaper": true, "sections": [{ "name": "Section A", "questions": [{ "question": "...", "options": ["..."], "answer": "...", "marks": 1, "importance_score": 8, "probability": "High" }] }] }`;
+    } else if (type === "MCQs") {
+      systemPrompt += ` Format strictly as: { "isFullPaper": false, "questions": [{ "question": "...", "options": ["Option 1", "Option 2", "Option 3", "Option 4"], "answer": "Option 1", "marks": 1, "importance_score": 8, "probability": "High" }] }`;
+    } else if (type === "True/False") {
+      systemPrompt += ` Format strictly as: { "isFullPaper": false, "questions": [{ "question": "...", "options": ["True", "False"], "answer": "True", "marks": 1, "importance_score": 8, "probability": "High" }] }`;
+    } else {
+      // Short Questions
+      systemPrompt += ` Format strictly as: { "isFullPaper": false, "questions": [{ "question": "...", "marks": 5, "importance_score": 8, "probability": "High" }] }`;
+    }
 
-    if (searchError) throw searchError;
-
-    const context = chunks?.map((c: any) => c.content).join("\n\n---\n\n") || "No specific past paper context found.";
-
-    // 3. Generate quiz with Gemini
-    const systemPrompt = `You are an expert examiner for ${board}. 
-Generate a quiz with ${count} questions for ${subject}, ${grade}.
-Use the provided past paper context to match the style, difficulty, and pattern of ${board} exams.
-
-Return ONLY a JSON array of objects with this structure:
-{
-  "question": "string",
-  "options": ["string", "string", "string", "string"],
-  "answer": "the exact string of the correct option",
-  "explanation": "string"
-}
-
-Past Paper Context:
-${context}`;
-
-    const aiResp = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+    // 2. Generation with Groq (Llama 3 8B)
+    const resp = await fetch(`https://api.groq.com/openai/v1/chat/completions`, {
       method: "POST",
-      headers: {
-        Authorization: `Bearer ${LOVABLE_API_KEY}`,
-        "Content-Type": "application/json",
+      headers: { 
+        "Authorization": `Bearer ${GROQ_API_KEY}`,
+        "Content-Type": "application/json" 
       },
       body: JSON.stringify({
-        model: "google/gemini-2.5-flash",
+        model: "llama-3.1-8b-instant",
         messages: [
           { role: "system", content: systemPrompt },
-          { role: "user", content: `Generate a ${count} question quiz for ${subject} ${grade} for the ${board} board.` }
+          { role: "user", content: `Generate paper for ${subject} ${grade}. Return ONLY JSON.` }
         ],
-        temperature: 0.7,
+        temperature: 0.6,
+        response_format: { type: "json_object" }
       }),
     });
 
-    if (!aiResp.ok) throw new Error("AI generation failed");
-    const aiData = await aiResp.json();
-    let content = aiData.choices[0].message.content;
-    
-    // Clean JSON if needed (sometimes AI adds markdown blocks)
-    content = content.replace(/```json\n?/, "").replace(/\n?```/, "").trim();
-    const questions = JSON.parse(content);
+    const data = await resp.json();
+    if (!resp.ok) throw new Error(data.error?.message || "AI Generation failed");
 
-    return new Response(JSON.stringify({ questions }), {
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
+    const resultJson = data.choices[0].message.content;
+    const content = resultJson.replace(/```json\n?/, "").replace(/\n?```/, "").trim();
+    
+    return new Response(content, { headers: { ...corsHeaders, "Content-Type": "application/json" } });
+
   } catch (e) {
-    console.error("generate-quiz error:", e);
-    return new Response(JSON.stringify({ error: e instanceof Error ? e.message : "Unknown error" }), {
-      status: 500,
+    console.error("Critical Error:", e.message);
+    return new Response(JSON.stringify({ error: e.message }), {
+      status: 200, // Safe for CORS
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   }

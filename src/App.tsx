@@ -13,6 +13,7 @@ import ClassDetails from "./pages/ClassDetails.tsx";
 import StudentInvites from "./pages/StudentInvites.tsx";
 import StudentClassDetails from "./pages/StudentClassDetails.tsx";
 import TakeQuiz from "./pages/TakeQuiz.tsx";
+import PrintQuiz from "./pages/PrintQuiz.tsx";
 import Settings from "./pages/Settings.tsx";
 import NotFound from "./pages/NotFound.tsx";
 import Navbar from "./components/Navbar.tsx";
@@ -128,6 +129,14 @@ const App = () => (
             element={
               <ProtectedRoute allowedRoles={["student", "admin"]}>
                 <TakeQuiz />
+              </ProtectedRoute>
+            } 
+          />
+          <Route 
+            path="/quiz/print/:quizId" 
+            element={
+              <ProtectedRoute allowedRoles={["student", "teacher", "admin"]}>
+                <PrintQuiz />
               </ProtectedRoute>
             } 
           />

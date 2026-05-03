@@ -111,6 +111,16 @@ export default function StudentClassDetails() {
             <div className="grid grid-cols-1 gap-4">
               {quizzes.map((quiz) => {
                 const submission = submissions.find(s => s.quiz_id === quiz.id);
+                const qData = quiz.questions;
+                let totalQuestions = 0;
+                if (Array.isArray(qData)) {
+                  totalQuestions = qData.length;
+                } else if (qData.sections && Array.isArray(qData.sections)) {
+                  totalQuestions = qData.sections.reduce((acc: number, s: any) => acc + (s.questions?.length || 0), 0);
+                } else if (qData.questions && Array.isArray(qData.questions)) {
+                  totalQuestions = qData.questions.length;
+                }
+
                 return (
                   <Card key={quiz.id} className="group hover:border-primary/30 transition-all overflow-hidden border-border/50">
                     <div className="flex flex-col md:flex-row items-center p-6 gap-6">
@@ -120,7 +130,7 @@ export default function StudentClassDetails() {
                       <div className="flex-1 space-y-1">
                         <h3 className="font-bold text-lg">{quiz.title}</h3>
                         <div className="flex gap-4 text-sm text-muted-foreground">
-                          <span>{quiz.questions.length} Questions</span>
+                          <span>{totalQuestions} Questions</span>
                           <span>•</span>
                           <span>{quiz.board}</span>
                         </div>
@@ -135,16 +145,11 @@ export default function StudentClassDetails() {
                             </div>
                           </div>
                         ) : (
-                          <>
-                            <Button variant="outline" size="sm" className="flex-1 md:flex-none">
-                              <FileDown className="mr-2 h-4 w-4" /> PDF
-                            </Button>
-                            <Button asChild className="flex-1 md:flex-none gradient-hero shadow-lg shadow-primary/20">
-                              <Link to={`/student/quiz/${quiz.id}`}>
-                                <PlayCircle className="mr-2 h-4 w-4" /> Start Quiz
+                            <Button asChild variant="outline" size="sm" className="w-full">
+                              <Link to={`/quiz/print/${quiz.id}`}>
+                                <FileDown className="mr-2 h-4 w-4" /> PDF / Print
                               </Link>
                             </Button>
-                          </>
                         )}
                       </div>
                     </div>
