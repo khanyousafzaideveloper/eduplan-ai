@@ -177,14 +177,6 @@ export default function Index() {
             <Button variant="outline" size="sm" onClick={exportPDF} disabled={!content || loading}>
               <Download className="h-4 w-4 mr-2" /> Export PDF
             </Button>
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
-              aria-label="Toggle theme"
-            >
-              {theme === "dark" ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
-            </Button>
             <Button variant="ghost" size="sm" onClick={handleLogout}>
               Logout
             </Button>

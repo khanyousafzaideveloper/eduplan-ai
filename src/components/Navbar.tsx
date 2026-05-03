@@ -1,4 +1,5 @@
 import { Link, useLocation, useNavigate } from "react-router-dom";
+import { useTheme } from "next-themes";
 import { useProfile } from "@/hooks/use-profile";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -18,11 +19,14 @@ import {
   BookOpen, 
   Mail, 
   Shield,
-  GraduationCap
+  GraduationCap,
+  Moon,
+  Sun
 } from "lucide-react";
 import { toast } from "sonner";
 
 export default function Navbar() {
+  const { theme, setTheme } = useTheme();
   const { profile } = useProfile();
   const location = useLocation();
   const navigate = useNavigate();
@@ -87,6 +91,16 @@ export default function Navbar() {
         </div>
 
         <div className="flex items-center gap-4">
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
+            className="rounded-full"
+            aria-label="Toggle theme"
+          >
+            {theme === "dark" ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
+          </Button>
+
           {profile && (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
