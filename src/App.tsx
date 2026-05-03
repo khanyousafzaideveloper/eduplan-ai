@@ -17,6 +17,7 @@ import PrintQuiz from "./pages/PrintQuiz.tsx";
 import Settings from "./pages/Settings.tsx";
 import NotFound from "./pages/NotFound.tsx";
 import Navbar from "./components/Navbar.tsx";
+import ChatbotWidget from "./components/ChatbotWidget.tsx";
 import { useProfile } from "@/hooks/use-profile";
 import { Loader2 } from "lucide-react";
 
@@ -80,6 +81,7 @@ const App = () => (
       <Sonner />
       <BrowserRouter>
         <Navbar />
+        <ChatbotWidget />
         <Routes>
           <Route path="/auth" element={<Auth />} />
           <Route path="/" element={<DashboardRedirect />} />
